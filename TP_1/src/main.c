@@ -3,6 +3,8 @@
 #include "bd_times.h"
 #include "bd_partidas.h"
 #include "utils.h"
+#include <windows.h>
+
 
 static void menu() {
     printf("\nSistema de Gerenciamento de Partidas - Parte I\n");
@@ -71,6 +73,7 @@ static void consultar_partidas(const BDPartidas *bdp, const BDTimes *bdt) {
 }
 
 int main(int argc, char *argv[]) {
+    SetConsoleOutputCP(CP_UTF8);
     const char *times_path = "times.csv";
     const char *partidas_path = "partidas.csv";
     if (argc >= 3) {
