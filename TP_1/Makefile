@@ -1,4 +1,4 @@
-# Detect OS for mkdir
+# Verifica o SO
 ifeq ($(OS),Windows_NT)
     MKDIR_P = mkdir
 else
