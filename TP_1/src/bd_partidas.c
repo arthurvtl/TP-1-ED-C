@@ -6,22 +6,23 @@
 #include <ctype.h>
 
 void bdpartidas_init(BDPartidas *bd) {
+    // Zera o contador, deixando a base pronta para receber partidas
     bd->n = 0;
 }
 
+// Remove caracteres de fim de linha de forma segura.
 static void chomp(char *s) {
     size_t n = strlen(s);
-    while (n > 0 && (s[n-1] == '\n' || s[n-1] == '\r')) {
+    while (n > 0 && (s[n - 1] == '\n' || s[n - 1] == '\r')) {
         s[--n] = '\0';
     }
 }
 
+// Converte uma linha CSV (ID,Time1ID,Time2ID,Gols1,Gols2) em uma estrutura Partida.
 static int parse_partida_linha(char *linha, Partida *out) {
-    // Remove CR/LF e espaços nas extremidades
     chomp(linha);
     str_trim(linha);
 
-    // Espera: ID,Time1ID,Time2ID,GolsTime1,GolsTime2
     char *tok;
     int vals[5];
     int i = 0;
@@ -55,7 +56,7 @@ int bdpartidas_carregar_csv(BDPartidas *bd, const char *caminho) {
     }
     char buf[512];
 
-    // Ler cabecalho e descartar
+    // Descarta linha de cabeçalho
     if (!fgets(buf, sizeof(buf), f)) {
         fclose(f);
         fprintf(stderr, "Arquivo de partidas vazio ou invalido: %s\n", caminho);
@@ -69,8 +70,8 @@ int bdpartidas_carregar_csv(BDPartidas *bd, const char *caminho) {
             break;
         }
         char linha[512];
-        strncpy(linha, buf, sizeof(linha)-1);
-        linha[sizeof(linha)-1] = '\0';
+        strncpy(linha, buf, sizeof(linha) - 1);
+        linha[sizeof(linha) - 1] = '\0';
 
         Partida p;
         if (!parse_partida_linha(linha, &p)) {
@@ -84,6 +85,7 @@ int bdpartidas_carregar_csv(BDPartidas *bd, const char *caminho) {
     return count;
 }
 
+// Aplica os resultados das partidas nas estatisticas acumuladas de cada time.
 void bdpartidas_aplicar_em_bdtimes(const BDPartidas *bdp, BDTimes *bdt) {
     for (int i = 0; i < bdp->n; i++) {
         const Partida *p = &bdp->partidas[i];
@@ -99,10 +101,13 @@ void bdpartidas_aplicar_em_bdtimes(const BDPartidas *bdp, BDTimes *bdt) {
 }
 
 static const char* nome_do_time(const BDTimes *bdt, int id) {
-    for (int i = 0; i < bdt->n; i++) if (bdt->times[i].id == id) return bdt->times[i].nome;
+    for (int i = 0; i < bdt->n; i++) {
+        if (bdt->times[i].id == id) return bdt->times[i].nome;
+    }
     return "(desconhecido)";
 }
 
+// Lista partidas filtrando pelo prefixo do time mandante.
 void bdpartidas_listar_por_mandante_prefixo(const BDPartidas *bdp, const BDTimes *bdt, const char *prefixo) {
     int count = 0;
     printf("| ID | Time1 |  | Time2 |\n");
@@ -121,6 +126,7 @@ void bdpartidas_listar_por_mandante_prefixo(const BDPartidas *bdp, const BDTimes
     }
 }
 
+// Lista partidas filtrando pelo prefixo do time visitante.
 void bdpartidas_listar_por_visitante_prefixo(const BDPartidas *bdp, const BDTimes *bdt, const char *prefixo) {
     int count = 0;
     printf("| ID | Time1 |  | Time2 |\n");
@@ -139,6 +145,7 @@ void bdpartidas_listar_por_visitante_prefixo(const BDPartidas *bdp, const BDTime
     }
 }
 
+// Lista partidas quando qualquer um dos times combina com o prefixo.
 void bdpartidas_listar_por_qualquer_prefixo(const BDPartidas *bdp, const BDTimes *bdt, const char *prefixo) {
     int count = 0;
     printf("| ID | Time1 |  | Time2 |\n");

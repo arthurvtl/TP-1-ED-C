@@ -3,25 +3,39 @@
 #include <stdio.h>
 #include <string.h>
 
+// Remove caracteres de nova linha deixados por fgets.
 static void chomp(char *s) {
     size_t n = strlen(s);
-    while (n > 0 && (s[n-1] == '\n' || s[n-1] == '\r')) s[--n] = '\0';
+    while (n > 0 && (s[n - 1] == '\n' || s[n - 1] == '\r')) {
+        s[--n] = '\0';
+    }
 }
 
 void bdtimes_init(BDTimes *bd) {
+    // Comeca com zero registros carregados
     bd->n = 0;
 }
 
 void time_zerar_stats(Time *t) {
-    t->v = 0; t->e = 0; t->d = 0; t->gm = 0; t->gs = 0;
+    // Limpa estatisticas acumuladas (usado antes de aplicar partidas)
+    t->v = 0;
+    t->e = 0;
+    t->d = 0;
+    t->gm = 0;
+    t->gs = 0;
 }
 
 void time_acumular_partida(Time *t, int gols_feitos, int gols_sofridos) {
+    // Atualiza gols e resultado (vitoria/empate/derrota) para um unico jogo
     t->gm += gols_feitos;
     t->gs += gols_sofridos;
-    if (gols_feitos > gols_sofridos) t->v++;
-    else if (gols_feitos == gols_sofridos) t->e++;
-    else t->d++;
+    if (gols_feitos > gols_sofridos) {
+        t->v++;
+    } else if (gols_feitos == gols_sofridos) {
+        t->e++;
+    } else {
+        t->d++;
+    }
 }
 
 int time_pontos(const Time *t) {
@@ -32,11 +46,11 @@ int time_saldo(const Time *t) {
     return t->gm - t->gs;
 }
 
+// Quebra linha CSV (ID,Nome) em campos prontos para popular Time.
 static int parse_time_linha(char *linha, int *id, char *nome) {
     chomp(linha);
     str_trim(linha);
 
-    // Campos: ID,Nome
     char *tok = strtok(linha, ",");
     if (!tok) return 0;
     int tmp_id;
@@ -60,12 +74,14 @@ int bdtimes_carregar_csv(BDTimes *bd, const char *caminho) {
         return 0;
     }
     char buf[256];
-    // Ignorar cabecalho
+
+    // Descarte do cabecalho
     if (!fgets(buf, sizeof(buf), f)) {
         fclose(f);
         fprintf(stderr, "Arquivo de times vazio ou invalido: %s\n", caminho);
         return 0;
     }
+
     int count = 0;
     while (fgets(buf, sizeof(buf), f)) {
         if (bd->n >= MAX_TIMES) {
@@ -73,10 +89,11 @@ int bdtimes_carregar_csv(BDTimes *bd, const char *caminho) {
             break;
         }
         char linha[256];
-        strncpy(linha, buf, sizeof(linha)-1);
-        linha[sizeof(linha)-1] = '\0';
+        strncpy(linha, buf, sizeof(linha) - 1);
+        linha[sizeof(linha) - 1] = '\0';
 
-        int id; char nome[MAX_NOME_TIME];
+        int id;
+        char nome[MAX_NOME_TIME];
         if (!parse_time_linha(linha, &id, nome)) {
             fprintf(stderr, "Linha de time ignorada (parse falhou): %s", buf);
             continue;
@@ -112,12 +129,12 @@ int bdtimes_buscar_por_prefixo(BDTimes *bd, const char *prefixo, int *indices, i
 }
 
 void bdtimes_imprimir_classificacao(const BDTimes *bd) {
-    // Larguras visuais das colunas
+    // Larguras visuais de cada coluna na tabela
     const int W_ID   = 3;
-    const int W_TIME = 12; // suficiente para nomes com acento; use maior se quiser
+    const int W_TIME = 12;
     const int W_V    = 2, W_E = 2, W_D = 2, W_GM = 3, W_GS = 3, W_S = 3, W_PG = 3;
 
-    // Cabeçalho
+    // Cabecalho
     printf("| "); print_utf8_padded("ID", W_ID);
     printf(" | "); print_utf8_padded("Time", W_TIME);
     printf(" | "); print_utf8_padded("V", W_V);
@@ -129,19 +146,19 @@ void bdtimes_imprimir_classificacao(const BDTimes *bd) {
     printf(" | "); print_utf8_padded("PG", W_PG);
     printf(" |\n");
 
-    // Linha separadora
-    printf("|-"); for (int i=0;i<W_ID;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_TIME;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_V;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_E;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_D;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_GM;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_GS;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_S;i++) putchar('-');
-    printf("-|-"); for (int i=0;i<W_PG;i++) putchar('-');
+    // Linha separadora para alinhar a tabela
+    printf("|-"); for (int i = 0; i < W_ID; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_TIME; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_V; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_E; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_D; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_GM; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_GS; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_S; i++) putchar('-');
+    printf("-|-"); for (int i = 0; i < W_PG; i++) putchar('-');
     printf("-|\n");
 
-    // Imprimir por ordem de ID (como antes)
+    // Imprime pela ordem de ID (0..9999) para manter saida previsivel
     for (int id = 0; id < 10000; id++) {
         for (int i = 0; i < bd->n; i++) {
             if (bd->times[i].id == id) {

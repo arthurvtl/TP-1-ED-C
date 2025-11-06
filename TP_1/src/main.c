@@ -5,8 +5,8 @@
 #include "utils.h"
 #include <windows.h>
 
-
-static void menu() {
+// Exibe as opcoes principais do programa.
+static void menu(void) {
     printf("\nSistema de Gerenciamento de Partidas - Parte I\n");
     printf("1 - Consultar time\n");
     printf("2 - Consultar partidas\n");
@@ -15,6 +15,7 @@ static void menu() {
     printf("Opcao: ");
 }
 
+// Busca times pelo prefixo e imprime suas estatisticas atuais.
 static void consultar_time(BDTimes *bdt) {
     char buf[128];
     printf("Digite o nome ou prefixo do time: ");
@@ -39,6 +40,7 @@ static void consultar_time(BDTimes *bdt) {
     }
 }
 
+// Menu interno que direciona listas de partidas por prefixo de nome.
 static void consultar_partidas(const BDPartidas *bdp, const BDTimes *bdt) {
     for (;;) {
         printf("\nEscolha o modo de consulta:\n");
@@ -73,10 +75,13 @@ static void consultar_partidas(const BDPartidas *bdp, const BDTimes *bdt) {
 }
 
 int main(int argc, char *argv[]) {
+    // Garante que a console aceite UTF-8 para impressao de nomes
     SetConsoleOutputCP(CP_UTF8);
+
     const char *times_path = "times.csv";
     const char *partidas_path = "partidas.csv";
     if (argc >= 3) {
+        // Permite sobrescrever caminhos via argumentos
         times_path = argv[1];
         partidas_path = argv[2];
     } else {
@@ -93,10 +98,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Falha ao carregar times.\n");
         return 1;
     }
-    // Stats comecam zeradas; so depois de carregar partidas acumulamos.
+    // Estatisticas comecam zeradas; somente apos carregar partidas sao acumuladas.
     if (!bdpartidas_carregar_csv(&bdp, partidas_path)) {
         fprintf(stderr, "Falha ao carregar partidas.\n");
-        // Ainda assim podemos consultar time, mas stats ficarão zeradas.
+        // Ainda assim podemos consultar time, mas estatisticas permanecem zeradas.
     }
     bdpartidas_aplicar_em_bdtimes(&bdp, &bdt);
 
@@ -106,13 +111,19 @@ int main(int argc, char *argv[]) {
         if (!read_line(op, sizeof(op))) break;
         if (op[0] == 'Q' || op[0] == 'q') break;
         switch (op[0]) {
-            case '1': consultar_time(&bdt); break;
-            case '2': consultar_partidas(&bdp, &bdt); break;
-            case '6': 
-                printf("Imprimindo classificacao.\n");
-                bdtimes_imprimir_classificacao(&bdt); 
+            case '1':
+                consultar_time(&bdt);
                 break;
-            default: printf("Opcao invalida.\n"); break;
+            case '2':
+                consultar_partidas(&bdp, &bdt);
+                break;
+            case '6':
+                printf("Imprimindo classificacao.\n");
+                bdtimes_imprimir_classificacao(&bdt);
+                break;
+            default:
+                printf("Opcao invalida.\n");
+                break;
         }
     }
 
